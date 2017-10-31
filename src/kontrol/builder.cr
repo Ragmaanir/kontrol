@@ -12,100 +12,118 @@ module Kontrol
       with self yield
     end
 
-    macro create_rules(**validations)
-      {% if validations %}
-        {% for n, c in validations %}
+    macro create_primitive_rules(name, type, **validations)
+      {% for n, c in validations %}
 
-          {% if type.class_name == "Path" %}
-            {% if %w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
-              %cond = ->(v : {{type}}){
-                {{c}}
-              }
-
-              _add({{name}}, Kontrol::PrimitiveRule{{type}}.new(:{{n}}, %cond))
-            {% else %}
-              {% raise "tset" %}
-            {% end %}
-          {% elsif type.class_name == "Generic" %}
-            %cond = ->(v : {{type}}){ {{c}} }
-
-            _add({{name}}, Kontrol::ArrayRule({{type}}).new(:{{n}}, %cond))
-          {% else %}
-            {% raise type.class_name %}
-          {% end %}
+        {% if type.class_name != "Path" %}
+            {% raise "Invalid type class #{type.class_name}, expected Path" %}
         {% end %}
+
+        {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
+            {% raise "Invalid type #{type.names.first}" %}
+        {% end %}
+
+          %cond = ->(v : {{type}}){
+            {{c}}
+          }
+
+          _add({{name}}, Kontrol::PrimitiveRule{{type}}.new(:{{n}}, %cond))
+
       {% end %}
     end
 
-    macro general_rule(name, **validations, &block)
+    macro create_array_rules(name, type, **validations)
+      {% for n, c in validations %}
+
+        {% if type.class_name != "Path" %}
+            {% raise "Invalid type class #{type.class_name}, expected Path" %}
+        {% end %}
+
+        {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
+            {% raise "Invalid type #{type.names.first}" %}
+        {% end %}
+
+        %cond = ->(v : Array({{type}})){
+          {{c}}
+        }
+
+        _add({{name}}, Kontrol::ArrayRule{{type}}.new(:{{n}}, %cond))
+
+      {% end %}
     end
 
-    macro array(name, type, **validations, &block)
-      create_rules(type: ->(arr : Array(JSON::Type)) { v.all(&.is_a?({{type}})) })
-      create_rules({{validations}})
-
+    macro nested(name, &block)
       _push {{name}}
       {% if block.class_name != "Nop" %}
         {{block.body}}
       {% end %}
       _pop
+    end
+
+    macro array(name, type, **validations)
+      create_array_rules({{name}}, {{type}}, type_check: v.all?(&.is_a?({{type}})))
+      create_array_rules({{name}}, {{type}}, {{**validations}})
     end
 
     macro array(name, **validations, &block)
-      create_rules({{validations}})
+      create_array_rules(Array(JSON::Type), {{validations}})
 
-      _push {{name}}
-      {% if block.class_name != "Nop" %}
-        {{block.body}}
-      {% end %}
-      _pop
+      nested({{name}}) {{block}}
     end
 
-    macro primitive(name, type, **validations, &block)
-      create_rules({{validations}})
+    TYPE_MAP = {
+      string: String,
+      int:    Int64,
+      float:  Float64,
+      bool:   Bool,
+    }
 
-      _push {{name}}
-      {% if block.class_name != "Nop" %}
-        {{block.body}}
-      {% end %}
-      _pop
+    {% for n, cls in TYPE_MAP %}
+      macro {{n.id}}(name, **validations)
+        primitive(\{{name}}, {{cls.id}}, \{{**validations}})
+      end
+    {% end %}
+
+    macro primitive(name, type, **validations)
+      create_primitive_rules({{name}}, {{type}}, type_check: v.is_a?({{type}}))
+      create_primitive_rules({{name}}, {{type}}, {{**validations}})
     end
 
-    macro required(name, type = Hash(Symbol, JSON::Type), **validations, &block)
-      %req_cond = ->(v : {{type}}){ v != nil }
-      _add({{name}}, Kontrol::Rule({{type}}).new(:required, %req_cond))
+    # macro required(name, type = Hash(Symbol, JSON::Type), **validations, &block)
+    #   %req_cond = ->(v : {{type}}){ v != nil }
+    #   _add({{name}}, Kontrol::Rule({{type}}).new(:required, %req_cond))
 
-      {% if validations %}
-        {% for n, c in validations %}
+    #   {% if validations %}
+    #     {% for n, c in validations %}
 
-          {% if type.class_name == "Path" %}
-            {% if %w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
-              %cond = ->(v : {{type}}){
-                {{c}}
-              }
+    #       {% if type.class_name == "Path" %}
+    #         {% if %w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
+    #           %cond = ->(v : {{type}}){
+    #             {{c}}
+    #           }
 
-              _add({{name}}, Kontrol::PrimitiveRule{{type}}.new(:{{n}}, %cond))
-            {% else %}
-              {% raise "tset" %}
-            {% end %}
-          {% elsif type.class_name == "Generic" %}
-            %cond = ->(v : {{type}}){ {{c}} }
+    #           _add({{name}}, Kontrol::PrimitiveRule{{type}}.new(:{{n}}, %cond))
+    #         {% else %}
+    #           {% raise "tset" %}
+    #         {% end %}
+    #       {% elsif type.class_name == "Generic" %}
+    #         %cond = ->(v : {{type}}){ {{c}} }
 
-            _add({{name}}, Kontrol::ArrayRule({{type}}).new(:{{n}}, %cond))
+    #         _add({{name}}, Kontrol::ArrayRule({{type}}).new(:{{n}}, %cond))
 
-            {% if false %}_add({{name}}, Kontrol::Rule({{type}}).new(:{{n}}, %cond)){% end %}
-          {% else %}
-            {% raise type.class_name %}
-          {% end %}
-        {% end %}
-      {% end %}
+    #         {% if false %}_add({{name}}, Kontrol::Rule({{type}}).new(:{{n}}, %cond)){% end %}
+    #       {% else %}
+    #         {% raise type.class_name %}
+    #       {% end %}
+    #     {% end %}
+    #   {% end %}
 
-      _push {{name}}
-      {% if block.class_name != "Nop" %}
-        {{block.body}}
-      {% end %}
-      _pop
-    end
+    #   _push {{name}}
+    #   {% if block.class_name != "Nop" %}
+    #     {{block.body}}
+    #   {% end %}
+    #   _pop
+    # end
 
     # def required(name, type : T.class, validations : Hash(Symbol, T -> Bool), &block) forall T
     #   @path << name

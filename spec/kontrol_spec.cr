@@ -1,6 +1,12 @@
 require "./spec_helper"
 
 describe Kontrol do
+  EMPTY_ARRAY = [] of String
+
+  def json(**h)
+    JSON.parse(h.to_json)
+  end
+
   pending "works" do
     val = Validator.define do
       required(:settings) do
@@ -29,7 +35,7 @@ describe Kontrol do
     val = Validator.define do
     end
 
-    assert val.call(JSON.parse(%<{"name": "test"}>)) == [] of Violation
+    assert val.call(json(name: "test")) == [] of Violation
   end
 
   test "required" do
@@ -37,18 +43,21 @@ describe Kontrol do
       required(:name, String)
     end
 
-    assert val.call(JSON.parse(%<{"name": "test"}>)) == [] of Violation
-    assert val.call(JSON.parse(%<{"other": "test"}>)).size == 1
+    assert val.call(json(name: "test")) == [] of Violation
+    assert val.call(json(other: "test")).size == 1
   end
 
-  test "required Int64" do
+  test! "required Int64" do
     val = Validator.define do
-      required(:count, Int64)
+      int(:count)
     end
 
-    assert val.call(JSON.parse(%<{"count": 1337}>)).size == 0
-    assert val.call(JSON.parse(%<{"count": "test"}>)).size == 1
-    assert val.call(JSON.parse(%<{"other": "test"}>)).size == 1
+    j = json(count: 1337)
+    assert val.call(j).size == 0
+    j = json(count: "test")
+    assert val.call(j).size == 1
+    j = json(other: "test")
+    assert val.call(j).size == 1
   end
 
   test! "array of Int64" do
@@ -56,14 +65,18 @@ describe Kontrol do
       array(:items, Int64, required: true)
     end
 
-    assert val.call(JSON.parse(%<{"items": []}>)).size == 0
+    j = json(items: EMPTY_ARRAY)
+    assert val.call(j).size == 0
   end
 
-  test! "array of array of Int64" do
+  test "array of array of Int64" do
     val = Validator.define do
-      array(:items, Int64, required: true)
+      array(:items, required: true) do
+        array(:name, String)
+      end
     end
 
-    assert val.call(JSON.parse(%<{"items": []}>)).size == 0
+    j = json(items: EMPTY_ARRAY)
+    assert val.call(j).size == 0
   end
 end

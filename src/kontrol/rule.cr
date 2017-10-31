@@ -74,8 +74,9 @@ module Kontrol
       end
 
       def call(input : JSON::Type)
-        if input.is_a?(Array({{type.id}}))
-          condition.call(input)
+        if input.is_a?(Array(JSON::Type)) && input.all?(&.is_a?({{type.id}}))
+          #condition.call(input.as(Array({{type.id}})))
+          condition.call(input.map(&.as({{type.id}})))
         else
           false
         end
