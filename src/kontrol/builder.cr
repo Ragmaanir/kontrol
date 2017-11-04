@@ -1,72 +1,28 @@
 module Kontrol
   class ValidatorBuilder
     @path : Array(Symbol)
+    @validators : Array(Hash(Symbol, Array(Validator)))
     getter rules : Hash(Array(Symbol), Array(AbstractRule))
 
     def initialize
       @path = [] of Symbol
       @rules = {} of Array(Symbol) => Array(AbstractRule)
+      @validators = [] of Hash(Symbol, Array(Validator))
     end
 
     def build
       with self yield
     end
 
-    macro create_primitive_rules(name, type, **validations)
-      {% for n, c in validations %}
-
-        {% if type.class_name != "Path" %}
-            {% raise "Invalid type class #{type.class_name}, expected Path" %}
-        {% end %}
-
-        {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
-            {% raise "Invalid type #{type.names.first}" %}
-        {% end %}
-
-          %cond = ->(v : {{type}}){
-            {{c}}
-          }
-
-          _add({{name}}, Kontrol::PrimitiveRule{{type}}.new(:{{n}}, %cond))
-
-      {% end %}
-    end
-
-    macro create_array_rules(name, type, **validations)
-      {% for n, c in validations %}
-
-        {% if type.class_name != "Path" %}
-            {% raise "Invalid type class #{type.class_name}, expected Path" %}
-        {% end %}
-
-        {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
-            {% raise "Invalid type #{type.names.first}" %}
-        {% end %}
-
-        %cond = ->(v : Array({{type}})){
-          {{c}}
-        }
-
-        _add({{name}}, Kontrol::ArrayRule{{type}}.new(:{{n}}, %cond))
-
-      {% end %}
-    end
-
-    macro nested(name, &block)
-      _push {{name}}
-      {% if block.class_name != "Nop" %}
-        {{block.body}}
-      {% end %}
-      _pop
-    end
-
     macro array(name, type, **validations)
-      create_array_rules({{name}}, {{type}}, type_check: v.all?(&.is_a?({{type}})))
-      create_array_rules({{name}}, {{type}}, {{**validations}})
+      # create_rules(ArrayRule, {{name}}, {{type}}, type_check: v.all?(&.is_a?({{type}})))
+      # create_rules(ArrayRule, {{name}}, {{type}}, {{**validations}})
+      %rules = create_rules(ArrayRule, {{name}}, {{type}}, type_check: v.all?(&.is_a?({{type}}), {{**validations}})
+      Kontrol::ArrayValidator.new(%rules)
     end
 
     macro array(name, **validations, &block)
-      create_array_rules(Array(JSON::Type), {{validations}})
+      create_rules(ArrayRule, {{name}}, JSON::Type, {{**validations}})
 
       nested({{name}}) {{block}}
     end
@@ -85,78 +41,89 @@ module Kontrol
     {% end %}
 
     macro primitive(name, type, **validations)
-      create_primitive_rules({{name}}, {{type}}, type_check: v.is_a?({{type}}))
-      create_primitive_rules({{name}}, {{type}}, {{**validations}})
+      #create_primitive_rules({{name}}, {{type}}, type_check: v.is_a?({{type}}))
+      %rules = create_primitive_rules({{type}}, type_check: v.is_a?({{type}}), {{**validations}})
+      _push_validator(Kontrol::PrimitiveValidator.new({{name}}, %rules))
     end
 
-    # macro required(name, type = Hash(Symbol, JSON::Type), **validations, &block)
-    #   %req_cond = ->(v : {{type}}){ v != nil }
-    #   _add({{name}}, Kontrol::Rule({{type}}).new(:required, %req_cond))
+    macro create_primitive_rules(type, **validations)
+      %rules = {} of Symbol => Kontrol::AbstractRule
 
-    #   {% if validations %}
-    #     {% for n, c in validations %}
+      {% for n, c in validations %}
 
-    #       {% if type.class_name == "Path" %}
-    #         {% if %w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
-    #           %cond = ->(v : {{type}}){
-    #             {{c}}
-    #           }
+        {% if type.class_name != "Path" %}
+            {% raise "Invalid type class #{type.class_name}, expected Path" %}
+        {% end %}
 
-    #           _add({{name}}, Kontrol::PrimitiveRule{{type}}.new(:{{n}}, %cond))
-    #         {% else %}
-    #           {% raise "tset" %}
-    #         {% end %}
-    #       {% elsif type.class_name == "Generic" %}
-    #         %cond = ->(v : {{type}}){ {{c}} }
+        {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
+            {% raise "Invalid type #{type.names.first}" %}
+        {% end %}
 
-    #         _add({{name}}, Kontrol::ArrayRule({{type}}).new(:{{n}}, %cond))
+        %cond = ->(v : {{type}}){
+          {{c}}
+        }
 
-    #         {% if false %}_add({{name}}, Kontrol::Rule({{type}}).new(:{{n}}, %cond)){% end %}
-    #       {% else %}
-    #         {% raise type.class_name %}
-    #       {% end %}
-    #     {% end %}
-    #   {% end %}
+        %rules[:{{n}}] = Kontrol::PrimitiveRule{{type}}.new(:{{n}}, %cond)
 
-    #   _push {{name}}
-    #   {% if block.class_name != "Nop" %}
-    #     {{block.body}}
-    #   {% end %}
-    #   _pop
-    # end
+      {% end %}
 
-    # def required(name, type : T.class, validations : Hash(Symbol, T -> Bool), &block) forall T
-    #   @path << name
-    #   validations.each do |name, condition|
-    #     _add(name, Rule.new(condition))
-    #   end
-    #   with self yield
-    # end
+      %rules
+    end
+
+    macro create_array_rules(rule, name, type, **validations)
+      %rules = {} of Symbol => Kontrol::AbstractRule
+
+      {% for n, c in validations %}
+
+        {% if type.class_name != "Path" %}
+            {% raise "Invalid type class #{type.class_name}, expected Path" %}
+        {% end %}
+
+        {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
+            {% raise "Invalid type #{type.names.first}" %}
+        {% end %}
+
+        %cond = ->(v : Array({{type}})){
+          {{c}}
+        }
+
+        %rules[{{name}}] = Kontrol::{{rule}}{{type}}.new(:{{n}}, %cond)
+
+      {% end %}
+
+      %rules
+    end
+
+    macro nested(name, &block)
+      _push {{name}}
+      {% if block.class_name != "Nop" %}
+        {{block.body}}
+      {% end %}
+      _pop
+    end
+
+    def _push_validator(validator : Validator)
+      @validators.last << validator
+    end
 
     def _push(name)
       @path << name
+      @validators.push([] of Validator)
     end
 
     def _pop
+      @validators.pop
       @path.pop
     end
 
-    # def _with_nesting(name, &block)
-    #   @path << name
-
-    #   with self yield
-
-    #   @path.pop
+    # def _add(name, rule)
+    #   full_path = @path + [name]
+    #   @rules[full_path] ||= [] of AbstractRule
+    #   @rules[full_path] << rule
     # end
 
-    def _add(name, rule)
-      full_path = @path + [name]
-      @rules[full_path] ||= [] of AbstractRule
-      @rules[full_path] << rule
-    end
-
     def result
-      Validator.new(rules)
+      HashValidator.new(rules)
     end
   end
 end

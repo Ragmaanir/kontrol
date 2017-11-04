@@ -1,72 +1,45 @@
 module Kontrol
   abstract class AbstractRule
-    abstract def name : Symbol
-
     def call(input : JSON::Type)
       false
     end
   end
 
-  class Rule(T) < AbstractRule
-    getter name : Symbol
-    getter condition : T -> Bool
+  class ObjectRule < AbstractRule
+    getter condition : Hash(String, JSON::Type) -> Bool
 
-    def initialize(@name, @condition)
+    def initialize(&@condition : Hash(String, JSON::Type) -> Bool)
     end
 
-    def call(input : JSON::Type)
-      case input
-      when T then condition.call(input)
-      else        false
-      end
+    def call(input : Hash(String, JSON::Type))
+      condition.call(input)
     end
   end
 
-  # class PrimitiveRule(T) < AbstractRule
-  #   alias CLASSES = String.class | Int64.class | Float64.class | Bool.class | Nil.class
-
-  #   getter name : Symbol
-  #   getter type : CLASSES
-  #   getter condition : T -> Bool
-
-  #   def initialize(@name, @type, @condition)
-  #   end
-
-  #   def call(input : JSON::Type)
-  #     if input.class = type
-  #       case v = input.class
-  #       when String  then condition.call(v)
-  #       when Int64   then condition.call(v)
-  #       when Float64 then condition.call(v)
-  #       when Bool    then condition.call(v)
-  #       when Nil     then condition.call(v)
-  #       end
-  #     end
-  #   end
-  # end
-
   PRIMITIVES = %w{String Int64 Float64 Bool Nil}
 
-  {% for type in PRIMITIVES %}
-    class PrimitiveRule{{type.id}} < AbstractRule
-      getter name : Symbol
+  PRIMITIVE_TYPES_X = {
+    String: String,
+    Int:    Int64,
+    Float:  Float64,
+    Bool:   Bool,
+  }
+
+  {% for name, type in PRIMITIVE_TYPES_X %}
+    class {{name.id}}Rule < AbstractRule
       getter condition : {{type.id}} -> Bool
 
-      def initialize(@name, @condition)
+      def initialize(&@condition : {{type.id}} -> Bool)
       end
 
-      def call(input : JSON::Type)
-        if input.is_a?({{type.id}})
-          condition.call(input)
-        else
-          false
-        end
+      def call(input : {{type.id}})
+        condition.call(input)
       end
     end
   {% end %}
 
-  {% for type in PRIMITIVES %}
-    class ArrayRule{{type.id}} < AbstractRule
+  {% for name, type in PRIMITIVE_TYPES_X %}
+    class {{name}}ArrayRule < AbstractRule
       getter name : Symbol
       getter condition : Array({{type.id}}) -> Bool
 
@@ -75,7 +48,6 @@ module Kontrol
 
       def call(input : JSON::Type)
         if input.is_a?(Array(JSON::Type)) && input.all?(&.is_a?({{type.id}}))
-          #condition.call(input.as(Array({{type.id}})))
           condition.call(input.map(&.as({{type.id}})))
         else
           false
@@ -83,27 +55,4 @@ module Kontrol
       end
     end
   {% end %}
-
-  # class HashRule(T) < AbstractRule
-  #   alias CLASSES = String.class | Int64.class | Float64.class | Bool.class | Nil.class
-
-  #   getter name : Symbol
-  #   getter type : CLASSES
-  #   getter condition : T -> Bool
-
-  #   def initialize(@name, @type, @condition)
-  #   end
-
-  #   def call(input : JSON::Type)
-  #     if input.class = type
-  #       case v = input.class
-  #       when String  then condition.call(v.as(T))
-  #       when Int64   then condition.call(v.as(T))
-  #       when Float64 then condition.call(v.as(T))
-  #       when Bool    then condition.call(v.as(T))
-  #       when Nil     then condition.call(v.as(T))
-  #       end
-  #     end
-  #   end
-  # end
 end

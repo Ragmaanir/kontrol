@@ -1,20 +1,15 @@
 module Kontrol
   class Violation
-    # JSON.mapping(
-    #   # path: Array(String),
-    #   key: String,
-    #   errors: Array(String)
-    # )
+    getter path : Path
+    getter name : Symbol
 
-    getter key : String
-    getter rule : AbstractRule
-    getter errors : Array(String)
+    # getter rule : AbstractRule?
+    # getter errors : Array(String)
 
-    def initialize(@key, @rule, @errors)
-    end
-
-    # def path : Array(String)
-    #   key.split(".")
+    # def initialize(@name, @path, @rule = nil, @errors = [] of String)
     # end
+
+    def initialize(@name, @path)
+    end
   end
 end

@@ -1,0 +1,35 @@
+# kontrol <%= Kontrol::VERSION %>
+
+Kontrol is a DSL to define validations for JSON data.
+
+## Installation
+
+Add this to your application's `shard.yml`:
+
+```yaml
+dependencies:
+  kontrol:
+    github: ragmaanir/kontrol
+```
+
+## Usage
+
+```crystal
+require "kontrol"
+```
+
+```crystal
+<%= File.read("spec/examples/usage_spec.cr") %>
+```
+
+## Contributing
+
+1. Fork it ( https://github.com/[your-github-name]/kontrol/fork )
+2. Create your feature branch (git checkout -b my-new-feature)
+3. Commit your changes (git commit -am 'Add some feature')
+4. Push to the branch (git push origin my-new-feature)
+5. Create a new Pull Request
+
+## Contributors
+
+- [ragmaanir](https://github.com/[your-github-name]) - creator, maintainer
