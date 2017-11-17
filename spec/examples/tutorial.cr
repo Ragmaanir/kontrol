@@ -34,9 +34,9 @@ k = Kontrol.object(
   name_length: Int64
 )
 
-# The :length validation checks whether the length of the name string matches the name_length.
+# The `length` validation checks whether the length of the name string matches the name_length.
 # The root-level validations are only executed when all properties are valid to prevent
-# them raising exception caused by invalid data. A root level validation error
+# them raising exceptions caused by invalid data. A root level validation error
 # is stored under the key "@", because the object might not have a name. So in this case:
 j = json(
   name: "test",
