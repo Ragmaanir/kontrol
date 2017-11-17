@@ -19,8 +19,12 @@ require "kontrol"
 ```
 
 ```crystal
-<%= File.read("spec/examples/usage_spec.cr") %>
+<%= File.read("spec/examples/simple_example.cr") %>
 ```
+
+## TODOs
+
+<%= File.read("TODO.md") %>
 
 ## Contributing
 
@@ -32,4 +36,4 @@ require "kontrol"
 
 ## Contributors
 
-- [ragmaanir](https://github.com/[your-github-name]) - creator, maintainer
+- [ragmaanir](https://github.com/ragmaanir) - creator, maintainer

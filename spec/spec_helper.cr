@@ -9,13 +9,6 @@ class Microtest::Test
   def json(**h)
     JSON.parse(h.to_json)
   end
-
-  def object_validator(**rules)
-    ObjectValidator.new(
-      {} of Symbol => ObjectRule,
-      **rules
-    )
-  end
 end
 
 Microtest.run!

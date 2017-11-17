@@ -1,0 +1,5 @@
+- [ ] Support arrays
+- [ ] Support/test required/optional attributes
+- [ ] Consistent handling of unspecified attributes (reject? ignore? errors?)
+- [ ] Cleanup/simplify macros
+- [ ] Use rule-class instances instead of closures?

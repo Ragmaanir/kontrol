@@ -1,6 +1,6 @@
-# kontrol
+# kontrol 0.1.0
 
-TODO: Write a description here
+Kontrol is a DSL to define validations for JSON data.
 
 ## Installation
 
@@ -9,7 +9,7 @@ Add this to your application's `shard.yml`:
 ```yaml
 dependencies:
   kontrol:
-    github: [your-github-name]/kontrol
+    github: ragmaanir/kontrol
 ```
 
 ## Usage
@@ -18,11 +18,45 @@ dependencies:
 require "kontrol"
 ```
 
-TODO: Write usage instructions here
+```crystal
+res = Kontrol.object(
+  name: String,
+  percentage: {type: Int64, min: v > 0, max: v <= 100}
+)
 
-## Development
+# invalid since percentage violates :min constraint
+assert res.call(json(
+  name: "test",
+  percentage: -1
+)) == {"percentage" => [:min]}
 
-TODO: Write development instructions here
+# invalid since name violates :type-constraint and :min is violated
+assert res.call(json(
+  name: 2,
+  percentage: -1
+)) == {"name" => [:type], "percentage" => [:min]}
+
+# invalid since the required attributes are missing or nil
+assert res.call(json(
+  name: nil
+)) == {"name" => [:required], "percentage" => [:required]}
+
+# valid
+assert res.call(json(
+  name: "test",
+  percentage: 45
+)).empty?
+
+```
+
+## TODOs
+
+- [ ] Support arrays
+- [ ] Support/test required/optional attributes
+- [ ] Consistent handling of unspecified attributes (reject? ignore? errors?)
+- [ ] Cleanup/simplify macros
+- [ ] Use rule-class instances instead of closures?
+
 
 ## Contributing
 
@@ -34,4 +68,4 @@ TODO: Write development instructions here
 
 ## Contributors
 
-- [[your-github-name]](https://github.com/[your-github-name]) Ragmaanir - creator, maintainer
+- [ragmaanir](https://github.com/ragmaanir) - creator, maintainer
