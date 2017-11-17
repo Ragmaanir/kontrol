@@ -65,6 +65,8 @@ module Kontrol
             validator_errors.each do |nested_name, nested_err|
               errors["#{name}.#{nested_name}"] = nested_err
             end
+          else
+            errors[name.to_s] = [:required]
           end
         when Hash(Symbol, Rule)
           prop_errors = validate_property_constraints(name, c, json[name.to_s]?)

@@ -37,10 +37,10 @@ describe Kontrol do
       count: {type: Int64, min: v > 0}
     )
 
-    assert res.call(json(name: "test", count: 7)) == {} of Symbol => Array(Symbol)
-    assert res.call(json(name: "test", count: -1)) == {"count" => [:min]}.to_h
-    assert res.call(json(name: 2, count: -1)) == {"name" => [:type], "count" => [:min]}.to_h
-    assert res.call(json(name: nil, count: nil)) == {"name" => [:required], "count" => [:required]}.to_h
+    assert res.call(json(name: "test", count: 7)).empty?
+    assert res.call(json(name: "test", count: -1)) == {"count" => [:min]}
+    assert res.call(json(name: 2, count: -1)) == {"name" => [:type], "count" => [:min]}
+    assert res.call(json(name: nil, count: nil)) == {"name" => [:required], "count" => [:required]}
   end
 
   test "object with root validations" do
@@ -52,9 +52,9 @@ describe Kontrol do
       name_length: {type: Int64, min: v > 0}
     )
 
-    assert res.call(json(name: "test")) == {"name_length" => [:required]}.to_h
+    assert res.call(json(name: "test")) == {"name_length" => [:required]}
     assert res.call(json(name: "test", name_length: 3)) == {"@" => [:name_length]}
-    assert res.call(json(name: "test", name_length: 4)) == {} of String => Array(Symbol)
+    assert res.call(json(name: "test", name_length: 4)).empty?
   end
 
   test "nested objects" do
@@ -66,7 +66,7 @@ describe Kontrol do
       )
     )
 
-    assert res.call(json(name: "test")) == {} of String => JSON::Type
+    assert res.call(json(name: "test")) == {"data" => [:required]}
 
     assert res.call(json(data: {key: 1, value: "v"})) == {
       "name"       => [:required],
@@ -76,8 +76,9 @@ describe Kontrol do
 
     assert res.call(json(name: 2, data: nil)) == {
       "name" => [:type],
+      "data" => [:required],
     }
 
-    assert res.call(json(name: "n", data: {key: "k", value: 123})) == {} of String => JSON::Type
+    assert res.call(json(name: "n", data: {key: "k", value: 123})).empty?
   end
 end

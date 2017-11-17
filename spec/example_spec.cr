@@ -6,6 +6,10 @@ describe Kontrol::Examples do
   end
 
   test "simple example" do
-    {{`cat ./spec/examples/simple_example.cr`}}
+    {{`cat ./spec/examples/simple.cr`}}
+  end
+
+  test "nested objects" do
+    {{`cat ./spec/examples/advanced.cr`}}
   end
 end
