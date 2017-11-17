@@ -1,4 +1,4 @@
 require "../spec_helper"
 
-describe Kontrol do
+describe Kontrol::Validator do
 end

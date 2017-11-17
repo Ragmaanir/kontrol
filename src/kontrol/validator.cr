@@ -4,10 +4,14 @@ require "./path"
 
 module Kontrol
   abstract class Validator
-    macro define(&block)
+    macro object(&block)
       v = Kontrol::ValidatorBuilder.new
-      v.build {{block}}
-      v.result
+      v.build do
+        object do
+          {{block.body}}
+        end
+      end
+      # v.result
     end
 
     abstract def call(json : JSON::Any?, path : Path = Path.root) : Array(Violation)
@@ -25,6 +29,13 @@ module Kontrol
       getter rules : Hash(Symbol, {{short.id}}Rule)
 
       def initialize(**rules)
+        @rules = {} of Symbol => {{short.id}}Rule
+        rules.each do |k,v|
+          @rules[k] = v
+        end
+      end
+
+      def initialize(rules : Hash(Symbol, {{short.id}}Rule))
         @rules = {} of Symbol => {{short.id}}Rule
         rules.each do |k,v|
           @rules[k] = v
@@ -58,6 +69,16 @@ module Kontrol
     getter children : Hash(Symbol, Validator)
 
     def initialize(rules, **children)
+      @rules = rules.to_h
+
+      # Convert specific validator instances to superclass
+      @children = {} of Symbol => Validator
+      children.each do |k, v|
+        @children[k] = v
+      end
+    end
+
+    def initialize(rules, children : Hash(Symbol, Validator))
       @rules = rules.to_h
 
       # Convert specific validator instances to superclass
