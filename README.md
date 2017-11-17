@@ -20,6 +20,33 @@ dependencies:
 require "kontrol"
 ```
 
+```crystal
+# To define a validation you can use the `Kontrol.object` macro.
+# Validations can be defined by expressions:
+
+Kontrol.object(
+  name: {type: String, length: v.size > 4},
+)
+
+# This will return `{"name" => [:length]}` if the constraint `length` is violated.
+# The value of the property `name` can be accessed via `v` in the validation expression.
+
+# For the type validation there are two shortcuts since they are so common:
+
+# Shortcut 1
+Kontrol.object(
+  name: {type: String},
+)
+
+# Shortcut 2
+Kontrol.object(
+  name: String,
+)
+
+# You always have to specify the type (might change).
+
+```
+
 Simple example:
 
 ```crystal
@@ -104,7 +131,7 @@ assert res.call(json(
 
 ## Contributing
 
-1. Fork it ( https://github.com/[your-github-name]/kontrol/fork )
+1. Fork it ( https://github.com/ragmaanir/kontrol/fork )
 2. Create your feature branch (git checkout -b my-new-feature)
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)

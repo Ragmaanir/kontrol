@@ -20,6 +20,10 @@ dependencies:
 require "kontrol"
 ```
 
+```crystal
+<%= File.read("spec/examples/tutorial.cr") %>
+```
+
 Simple example:
 
 ```crystal
@@ -38,7 +42,7 @@ Advanced example (nested objects and object-validations):
 
 ## Contributing
 
-1. Fork it ( https://github.com/[your-github-name]/kontrol/fork )
+1. Fork it ( https://github.com/ragmaanir/kontrol/fork )
 2. Create your feature branch (git checkout -b my-new-feature)
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)

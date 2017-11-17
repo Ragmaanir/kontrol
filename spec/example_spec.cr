@@ -1,8 +1,8 @@
 require "./spec_helper"
 
 describe Kontrol::Examples do
-  def json(**hash)
-    JSON.parse(hash.to_json)
+  test "tutorial" do
+    {{`cat ./spec/examples/tutorial.cr`}}
   end
 
   test "simple example" do
