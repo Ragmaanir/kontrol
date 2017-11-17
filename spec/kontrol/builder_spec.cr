@@ -1,39 +1,4 @@
-# require "../spec_helper"
-
-# describe Kontrol::Builder do
-#   test "empty object" do
-#     Validator.object do
-#     end
-#   end
-
-#   test "object with primitive values" do
-#     Validator.object do
-#       int(:id)
-#     end
-#   end
-
-#   # Validator.object do
-#   #   int(:id)
-#   # end
-
-#   # Validator.array(Int32)
-#   # Validator.array.array(Int32)
-
-#   # Validator.object do
-#   #   int(:id)
-#   #   object(:options) do
-#   #     string(:type)
-#   #   end
-#   #
-#   # end
-
-#   # ObjectValidator.new(
-#   #   {} of Symbol => ObjectRule
-#   #   {
-#   #     id: IntValidator.new
-#   #   }
-#   # )
-# end
+require "../spec_helper"
 
 describe Kontrol::Builder do
   def json(**hash)

@@ -98,32 +98,9 @@ module Kontrol
       end
     end
 
-    # class ObjectArrayValidator(T) < Validator
-    #   getter child : ObjectValidator
-
-    #   def initialize(@child : ObjectValidator)
-    #   end
-    # end
-
-    # class NestedArrayValidator(T) < Validator
-    #   getter child : ArrayValidator(T)
-
-    #   def initialize(@child : ArrayValidator(T))
-    #   end
-    # end
-
-    # class PrimitiveArrayValidator < Validator
-    #   def initialize(type : String.class | Int64.class | Float64.class | Boolean.class)
-    #   end
-    # end
-
     macro object(**properties)
       Kontrol::Builder::ObjectValidator.new(
         Hash(Symbol, Kontrol::Builder::Rule).new,
-        # Hash(Symbol, Hash(Symbol, Kontrol::Rule)).new(
-        #   Kontrol::Builder.convert_property_constraints_to_closures({{**properties}})
-        # )
-
         Kontrol::Builder.convert_property_constraints_to_closures({{**properties}}).to_h
       )
     end
@@ -134,23 +111,6 @@ module Kontrol
         Kontrol::Builder.convert_property_constraints_to_closures({{**properties}}).to_h
       )
     end
-
-    # convert_property_constraints_to_closures(
-    #   name: String,
-    #   value: {type: Int64, min: v > 0},
-    #   object: ObjectValidator.new(
-    #     street: {type: ->(v: JSON:Any) { v.is_a?(String) }}
-    #   )
-    # )
-    #
-    # =>
-    # {
-    #   name:  {type: ->(v : JSON::Any) { v.is_a?(String) }},
-    #   value: {type: ->(v : JSON::Any) { v.is_a?(Int64) }, min: ->(v : JSON::Any) { v > 0 }},
-    #   object: ObjectValidator.new(
-    #     street: {type: ->(v: JSON:Any) { v.is_a?(String) }}
-    #   )
-    # }
 
     macro convert_property_constraints_to_closures(**properties)
       {
@@ -165,19 +125,7 @@ module Kontrol
           {% end %}
         {% end %}
       }.to_h
-      #.as(Hash(Symbol, Hash(Symbol, Kontrol::Builder::Rule) | Kontrol::Builder::Validator))
     end
-
-    # macro convert_constraints_to_closures(type, **constraints)
-    #   {%
-    #     str = "{"
-    #     constraints.to_a.map do |(name, constraint)|
-    #       str += "#{name}: Kontrol::Builder.define_typed_closure(#{type}, #{constraint})"
-    #     end
-    #     str += "}.to_h"
-    #   %}
-    #   {{str}}
-    # end
 
     # FIXME: convert to rule-instances instead of closures so expression can be captured
     macro convert_constraints_to_closures(type, **constraints)
@@ -187,10 +135,6 @@ module Kontrol
         {% end %}
       }.to_h
     end
-
-    # no overload matches 'Kontrol::ObjectValidator.new' with types
-    # Hash(Symbol, Proc(JSON::Any, Bool)),
-    # Hash(Symbol, Hash(Symbol, Proc(JSON::Any, Bool)) | Kontrol::Builder::Validator)
 
     # FIXME: convert to rule-instances instead of closures so expression can be captured
     macro convert_sugared_constraints_to_closures(constraints)
@@ -226,263 +170,159 @@ module Kontrol
         end
       }.as(Kontrol::Builder::Rule)
     end
-
-    # # FIXME: convert to rule-instances instead of closures so expression can be captured
-    # # "sugared" because the :type-constraint is handled separately
-    # macro convert_sugared_constraints_to_closures(constraints)
-    #   {
-    #     {% if t = constraints[:type] %}
-    #       type: ->(v : JSON::Any) { v.raw.is_a?({{t}})},
-    #     {% else %}
-    #       {% raise "type is missing in #{constraints}" %}
-    #     {% end %}
-
-    #     {% constraints_except_type = constraints.to_a.reject { |pair| pair[0] == "type" } %}
-    #     {% if !constraints_except_type.empty? %}
-    #       #{ % raise "Kontrol::Builder.convert_constraints_to_closures(#{t}, #{constraints_except_type})" %}
-    #       **Kontrol::Builder.convert_constraints_to_closures({{t}}, {{constraints_except_type}})
-    #     {% end %}
-
-    #     {% if false %}
-    #     # {% if false %}
-    #     #   {% if constraints.size > 1 || (constraints[:type] == nil && constraints.size > 0) %}
-    #     #     # this sucks: there is no reject on NamedTupleLiteral and to_a creates an ugly array
-    #     #     **Kontrol::Builder.convert_constraints_to_closures({{t}},
-    #     #       {% for name, constraint in constraints %}
-    #     #         {% if name != :type %}
-    #     #           {{name}}: {{constraint}},
-    #     #         {% end %}
-    #     #       {% end %}
-    #     #     )
-    #     #   {% end %}
-    #     # {% end %}
-
-    #     # {% if constraints.size > 1 || (constraints[:type] == nil && constraints.size > 0) %}
-    #     #   {% raise "XXX: #{constraints}" %}
-    #     #   Kontrol::Builder.convert_constraints_to_closures({{t}}, {{**constraints}})
-    #     # {% end %}
-    #     {% end %}
-    #   }
-    # end
-
-    # # FIXME: convert to rule-instances instead of closures so expression can be captured
-    # macro convert_constraints_to_closures(type, **constraints)
-    #   {
-    #     {% raise "Constraints: #{constraints}" %}
-    #     {% for pair in constraints %}
-    #       {{pair[0]}}: ->(v : JSON::Any) {
-    #         v = v.raw.as({{type}})
-    #         begin
-    #           {{pair[1]}}
-    #         rescue e
-    #           raise "Validation '{{pair[1]}}' raise (#{e})"
-    #         end
-    #       },
-    #     {% end %}
-    #   }
-    # end
-
-    # # FIXME: convert to rule-instances instead of closures so expression can be captured
-    # macro convert_constraints_to_closures(type, constraints)
-    #   {% raise "Constraints: #{constraints}" %}
-    #   {% for name, constraint in constraints %}
-    #     {{name}}: ->(v : JSON::Any) {
-    #       v = v.raw.as({{type}})
-    #       begin
-    #         {{constraint}}
-    #       rescue e
-    #         raise "Validation '{{constraint}}' raise (#{e})"
-    #       end
-    #     },
-    #   {% end %}
-    # end
-
-    # # FIXME: convert to rule-instances instead of closures so expression can be captured
-    # macro convert_constraints_to_closures(type, **constraints)
-    #   {% raise "Constraints: #{constraints}" if constraints.empty? %}
-    #   {
-    #     {% for name, constraint in constraints %}
-    #       {% if name != :type %}
-    #         {{name}}: ->(v : JSON::Any) {
-    #           v = v.raw.as({{type}})
-    #           begin
-    #             {{constraint}}
-    #           rescue e
-    #             raise "Validation '{{constraint}}' raise (#{e})"
-    #           end
-    #         },
-    #       {% end %}
-    #     {% end %}
-    #   }
-    # end
-
-    # macro array(x, **validations)
-    #   Kontrol::ArrayValidator.new(
-    #     {{x}},
-    #     wrap_predicates(ArrayValidator, {{validations}})
-    #   )
-    # end
-
-    # macro wrap_predicates(rule, type, **validations)
-    #   {% for k, v in validations %}
-    #     {{k}}: {{rule}}({{type}}).new { |v| {{v}} },
-    #   {% end %}
-    # end
   end
 
-  class ValidatorBuilder
-    @path : Array(Symbol)
-    @validators : Array(Hash(Symbol, Array(Validator)))
+  # class ValidatorBuilder
+  #   @path : Array(Symbol)
+  #   @validators : Array(Hash(Symbol, Array(Validator)))
 
-    # getter rules : Hash(Array(Symbol), Array(AbstractRule))
+  #   # getter rules : Hash(Array(Symbol), Array(AbstractRule))
 
-    def initialize
-      @path = [] of Symbol
-      # @rules = {} of Array(Symbol) => Array(AbstractRule)
-      @validators = [] of Hash(Symbol, Array(Validator))
-    end
+  #   def initialize
+  #     @path = [] of Symbol
+  #     # @rules = {} of Array(Symbol) => Array(AbstractRule)
+  #     @validators = [] of Hash(Symbol, Array(Validator))
+  #   end
 
-    def build
-      with self yield
-    end
+  #   def build
+  #     with self yield
+  #   end
 
-    macro object(**rules, &block)
-      %rules = {
-        {% for name, rule in rules %}
-          {{name.id}}: ObjectRule.new do |v|
-            {{rule}}
-          end,
-        {% end %}
-      } of Symbol => ObjectRule
+  #   macro object(**rules, &block)
+  #     %rules = {
+  #       {% for name, rule in rules %}
+  #         {{name.id}}: ObjectRule.new do |v|
+  #           {{rule}}
+  #         end,
+  #       {% end %}
+  #     } of Symbol => ObjectRule
 
+  #     %v = ValidatorBuilder.new
+  #     %validators = %v.build {{block}}
 
-      %v = ValidatorBuilder.new
-      %validators = %v.build {{block}}
+  #     if %validators
+  #       Kontrol::ObjectValidator.new(%rules, %validators)
+  #     else
+  #       Kontrol::ObjectValidator.new(%rules, **NamedTuple.new)
+  #     end
+  #   end
 
+  #   macro array(name, type, **validations)
+  #     # create_rules(ArrayRule, {{name}}, {{type}}, type_check: v.all?(&.is_a?({{type}})))
+  #     # create_rules(ArrayRule, {{name}}, {{type}}, {{**validations}})
+  #     %rules = create_rules(ArrayRule, {{name}}, {{type}}, type_check: v.all?(&.is_a?({{type}}), {{**validations}})
+  #     Kontrol::ArrayValidator.new(%rules)
+  #   end
 
-      if %validators
-        Kontrol::ObjectValidator.new(%rules, %validators)
-      else
-        Kontrol::ObjectValidator.new(%rules, **NamedTuple.new)
-      end
-    end
+  #   macro array(name, **validations, &block)
+  #     create_rules(ArrayRule, {{name}}, JSON::Type, {{**validations}})
 
-    macro array(name, type, **validations)
-      # create_rules(ArrayRule, {{name}}, {{type}}, type_check: v.all?(&.is_a?({{type}})))
-      # create_rules(ArrayRule, {{name}}, {{type}}, {{**validations}})
-      %rules = create_rules(ArrayRule, {{name}}, {{type}}, type_check: v.all?(&.is_a?({{type}}), {{**validations}})
-      Kontrol::ArrayValidator.new(%rules)
-    end
+  #     nested({{name}}) {{block}}
+  #   end
 
-    macro array(name, **validations, &block)
-      create_rules(ArrayRule, {{name}}, JSON::Type, {{**validations}})
+  #   TYPE_MAP = {
+  #     string: String,
+  #     int:    Int64,
+  #     float:  Float64,
+  #     bool:   Bool,
+  #   }
 
-      nested({{name}}) {{block}}
-    end
+  #   {% for n, cls in TYPE_MAP %}
+  #     macro {{n.id}}(name, **rules)
+  #       %rules = {
+  #         \{% for k, rule in rules %}
+  #           \{{k}}: \{{rule}},
+  #         \{% end %}
+  #       } of Symbol => {{n.stringify.capitalize.id}}Rule
 
-    TYPE_MAP = {
-      string: String,
-      int:    Int64,
-      float:  Float64,
-      bool:   Bool,
-    }
+  #       {{n.stringify.capitalize.id}}Validator.new(%rules)
+  #     end
+  #   {% end %}
 
-    {% for n, cls in TYPE_MAP %}
-      macro {{n.id}}(name, **rules)
-        %rules = {
-          \{% for k, rule in rules %}
-            \{{k}}: \{{rule}},
-          \{% end %}
-        } of Symbol => {{n.stringify.capitalize.id}}Rule
+  #   macro primitive(name, type, **validations)
+  #     #create_primitive_rules({{name}}, {{type}}, type_check: v.is_a?({{type}}))
+  #     %rules = create_primitive_rules({{type}}, type_check: v.is_a?({{type}}), {{**validations}})
+  #     _push_validator(Kontrol::{{type}}Validator.new({{name}}, %rules))
+  #   end
 
-        {{n.stringify.capitalize.id}}Validator.new(%rules)
-      end
-    {% end %}
+  #   macro create_primitive_rules(type, **validations)
+  #     %rules = {} of Symbol => Kontrol::AbstractRule
 
-    macro primitive(name, type, **validations)
-      #create_primitive_rules({{name}}, {{type}}, type_check: v.is_a?({{type}}))
-      %rules = create_primitive_rules({{type}}, type_check: v.is_a?({{type}}), {{**validations}})
-      _push_validator(Kontrol::{{type}}Validator.new({{name}}, %rules))
-    end
+  #     {% for n, c in validations %}
 
-    macro create_primitive_rules(type, **validations)
-      %rules = {} of Symbol => Kontrol::AbstractRule
+  #       {% if type.class_name != "Path" %}
+  #           {% raise "Invalid type class #{type.class_name}, expected Path" %}
+  #       {% end %}
 
-      {% for n, c in validations %}
+  #       {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
+  #           {% raise "Invalid type #{type.names.first}" %}
+  #       {% end %}
 
-        {% if type.class_name != "Path" %}
-            {% raise "Invalid type class #{type.class_name}, expected Path" %}
-        {% end %}
+  #       %cond = ->(v : {{type}}){
+  #         {{c}}
+  #       }
 
-        {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
-            {% raise "Invalid type #{type.names.first}" %}
-        {% end %}
+  #       %rules[:{{n}}] = Kontrol::{{type}}Rule.new(:{{n}}, %cond)
 
-        %cond = ->(v : {{type}}){
-          {{c}}
-        }
+  #     {% end %}
 
-        %rules[:{{n}}] = Kontrol::{{type}}Rule.new(:{{n}}, %cond)
+  #     %rules
+  #   end
 
-      {% end %}
+  #   macro create_array_rules(rule, name, type, **validations)
+  #     %rules = {} of Symbol => Kontrol::AbstractRule
 
-      %rules
-    end
+  #     {% for n, c in validations %}
 
-    macro create_array_rules(rule, name, type, **validations)
-      %rules = {} of Symbol => Kontrol::AbstractRule
+  #       {% if type.class_name != "Path" %}
+  #           {% raise "Invalid type class #{type.class_name}, expected Path" %}
+  #       {% end %}
 
-      {% for n, c in validations %}
+  #       {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
+  #           {% raise "Invalid type #{type.names.first}" %}
+  #       {% end %}
 
-        {% if type.class_name != "Path" %}
-            {% raise "Invalid type class #{type.class_name}, expected Path" %}
-        {% end %}
+  #       %cond = ->(v : Array({{type}})){
+  #         {{c}}
+  #       }
 
-        {% if !%w{Int64 Float64 String Bool Nil}.includes?(type.names.first.stringify) %}
-            {% raise "Invalid type #{type.names.first}" %}
-        {% end %}
+  #       %rules[{{name}}] = Kontrol::{{rule}}{{type}}.new(:{{n}}, %cond)
 
-        %cond = ->(v : Array({{type}})){
-          {{c}}
-        }
+  #     {% end %}
 
-        %rules[{{name}}] = Kontrol::{{rule}}{{type}}.new(:{{n}}, %cond)
+  #     %rules
+  #   end
 
-      {% end %}
+  #   macro nested(name, &block)
+  #     _push {{name}}
+  #     {% if block.class_name != "Nop" %}
+  #       {{block.body}}
+  #     {% end %}
+  #     _pop
+  #   end
 
-      %rules
-    end
+  #   def _push_validator(validator : Validator)
+  #     @validators.last << validator
+  #   end
 
-    macro nested(name, &block)
-      _push {{name}}
-      {% if block.class_name != "Nop" %}
-        {{block.body}}
-      {% end %}
-      _pop
-    end
+  #   def _push(name)
+  #     @path << name
+  #     @validators.push([] of Validator)
+  #   end
 
-    def _push_validator(validator : Validator)
-      @validators.last << validator
-    end
+  #   def _pop
+  #     @validators.pop
+  #     @path.pop
+  #   end
 
-    def _push(name)
-      @path << name
-      @validators.push([] of Validator)
-    end
+  #   # def _add(name, rule)
+  #   #   full_path = @path + [name]
+  #   #   @rules[full_path] ||= [] of AbstractRule
+  #   #   @rules[full_path] << rule
+  #   # end
 
-    def _pop
-      @validators.pop
-      @path.pop
-    end
-
-    # def _add(name, rule)
-    #   full_path = @path + [name]
-    #   @rules[full_path] ||= [] of AbstractRule
-    #   @rules[full_path] << rule
-    # end
-
-    def result
-      ObjectValidator.new(rules)
-    end
-  end
+  #   def result
+  #     ObjectValidator.new(rules)
+  #   end
+  # end
 end
