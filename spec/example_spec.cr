@@ -5,11 +5,11 @@ describe Kontrol::Examples do
     {{`cat ./spec/examples/tutorial.cr`}}
   end
 
-  test "simple example" do
+  test "simple" do
     {{`cat ./spec/examples/simple.cr`}}
   end
 
-  test "nested objects" do
+  test "advanced" do
     {{`cat ./spec/examples/advanced.cr`}}
   end
 end

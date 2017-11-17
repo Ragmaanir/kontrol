@@ -1,13 +1,15 @@
 require "./spec_helper"
 
 describe Kontrol do
-  test "convert_constraints_to_closures" do
-    val = convert_constraints_to_closures(Int64, min: v > 0)
+  test "convert_sugared_constraints_to_closures"
+
+  test "convert_constraints_to_untyped_closures" do
+    val = convert_constraints_to_untyped_closures(min: v.as_i > 0)
 
     min = val[:min].as(Rule)
     assert min.call(JSON::Any.new(3.to_i64))
     assert !min.call(JSON::Any.new(-3.to_i64))
-    assert_raises(TypeCastError) { !min.call(JSON::Any.new("String")) }
+    assert_raises(RuleException) { !min.call(JSON::Any.new("String")) }
   end
 
   test "convert_property_constraints_to_closures" do
@@ -46,7 +48,7 @@ describe Kontrol do
   test "object with root validations" do
     res = object(
       {
-        name_length: v["name"].as(String).size == v["name_length"].as(Int64),
+        name_length: v["name"].as_s.size == v["name_length"].as_i,
       },
       name: String,
       name_length: {type: Int64, min: v > 0}
@@ -80,5 +82,30 @@ describe Kontrol do
     }
 
     assert res.call(json(name: "n", data: {key: "k", value: 123})).empty?
+  end
+
+  test "nested objects with root validations" do
+    res = object(
+      data: object(
+        {
+          length: v["name"].as_s.size == v["name_length"].as_i,
+        },
+        name: String,
+        name_length: Int64
+      )
+    )
+
+    assert res.call(json()) == {"data" => [:required]}
+
+    assert res.call(json(data: {name: 1})) == {
+      "data.name"        => [:type],
+      "data.name_length" => [:required],
+    }
+
+    assert res.call(json(data: {name: "test", name_length: 3})) == {
+      "data.@" => [:length],
+    }
+
+    assert res.call(json(data: {name: "test", name_length: 4})).empty?
   end
 end

@@ -1,6 +1,6 @@
 res = object(
   {
-    my_book: v["author"].as(String) == JSON::Any.new(v)["book"]["author"].as_s,
+    my_book: v["author"].as_s == v["book"]["author"].as_s,
   },
   author: String,
   book: object(
