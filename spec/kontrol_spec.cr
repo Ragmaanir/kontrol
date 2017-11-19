@@ -13,7 +13,7 @@ describe Kontrol do
   end
 
   test "convert_property_constraints_to_closures" do
-    res = val = convert_property_constraints_to_closures(
+    res = convert_property_constraints_to_closures(
       name: String,
       count: {type: Int64, min: v > 0}
     )
@@ -34,7 +34,7 @@ describe Kontrol do
   end
 
   test "object without root validations" do
-    res = object(
+    res, _ = object(
       name: String,
       count: {type: Int64, min: v > 0}
     )
@@ -46,7 +46,7 @@ describe Kontrol do
   end
 
   test "object with root validations" do
-    res = object(
+    res, _ = object(
       {
         name_length: v["name"].as_s.size == v["name_length"].as_i,
       },
@@ -60,7 +60,7 @@ describe Kontrol do
   end
 
   test "nested objects" do
-    res = object(
+    res, _ = object(
       name: String,
       data: object(
         key: String,
@@ -85,7 +85,7 @@ describe Kontrol do
   end
 
   test "nested objects with root validations" do
-    res = object(
+    res, _ = object(
       data: object(
         {
           length: v["name"].as_s.size == v["name_length"].as_i,
@@ -107,5 +107,18 @@ describe Kontrol do
     }
 
     assert res.call(json(data: {name: "test", name_length: 4})).empty?
+  end
+
+  test "converts json to nested named tuples" do
+    _, conv = object(
+      data: object(
+        name: String,
+        name_length: Int64
+      )
+    )
+
+    input = {data: {name: "test", name_length: 4}}
+    assert conv.call(json(**input)) == input
+    assert conv.call(json(**input))[:data][:name] == "test"
   end
 end

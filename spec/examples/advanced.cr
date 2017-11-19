@@ -1,4 +1,4 @@
-res = object(
+res, _ = object(
   {
     my_book: v["author"].as_s == v["book"]["author"].as_s,
   },

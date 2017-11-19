@@ -30,7 +30,7 @@ Simple example:
 <%= File.read("spec/examples/simple.cr") %>
 ```
 
-Advanced example (nested objects and object-validations):
+Advanced example (nested objects and root-level-validations):
 
 ```crystal
 <%= File.read("spec/examples/advanced.cr") %>

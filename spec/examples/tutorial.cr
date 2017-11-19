@@ -1,7 +1,7 @@
 # To define a validation you can use the `Kontrol.object` macro.
 # Validations can be defined by expressions:
 
-k = Kontrol.object(
+k, _ = Kontrol.object(
   name: {type: String, length: v.size > 4},
 )
 
@@ -28,7 +28,7 @@ Kontrol.object(
 
 # You can also define root-level validations for an object:
 
-k = Kontrol.object(
+k, _ = Kontrol.object(
   {length: v["name"].as_s.size == v["name_length"].as_i},
   name: String,
   name_length: Int64

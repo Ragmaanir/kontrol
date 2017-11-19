@@ -106,18 +106,55 @@ module Kontrol
     end
   end
 
+  class ObjectConverter(T)
+    getter convert : JSON::Any -> T
+
+    def initialize(@convert : JSON::Any -> T)
+    end
+
+    def call(json : JSON::Any) : T
+      convert.call(json)
+    end
+  end
+
   macro object(**properties)
-    Kontrol::ObjectValidator.new(
-      Hash(Symbol, Kontrol::Rule).new,
-      Kontrol.convert_property_constraints_to_closures({{**properties}}).to_h
-    )
+    {
+      Kontrol::ObjectValidator.new(
+        Hash(Symbol, Kontrol::Rule).new,
+        Kontrol.convert_property_constraints_to_closures({{**properties}}).to_h
+      ),
+      Kontrol::ObjectConverter.new(
+        Kontrol.convert_property_types_to_typecasts({{**properties}})
+      )
+    }
   end
 
   macro object(validations, **properties)
-    Kontrol::ObjectValidator.new(
-      Kontrol.convert_constraints_to_untyped_closures({{**validations}}),
-      Kontrol.convert_property_constraints_to_closures({{**properties}}).to_h
-    )
+    {
+      Kontrol::ObjectValidator.new(
+        Kontrol.convert_constraints_to_untyped_closures({{**validations}}),
+        Kontrol.convert_property_constraints_to_closures({{**properties}}).to_h
+      ),
+      Kontrol::ObjectConverter.new(
+        Kontrol.convert_property_types_to_typecasts({{**properties}})
+      )
+    }
+  end
+
+  macro convert_property_types_to_typecasts(**properties)
+    ->(json : JSON::Any) {
+      {
+        {% for name, definition in properties %}
+          {% if definition.is_a?(Call) %}
+            {{name}}: (Kontrol.{{definition}})[1].call(json[{{name.stringify}}]),
+          {% elsif definition.is_a?(NamedTupleLiteral) %}
+            {{name}}: json[{{name.stringify}}].raw.as({{definition[:type]}}),
+          {% else %}
+            {{name}}: json[{{name.stringify}}].raw.as({{definition}}),
+          {% end %}
+        {% end %}
+      }
+    }
   end
 
   macro convert_property_constraints_to_closures(**properties)
@@ -129,7 +166,7 @@ module Kontrol
           {{prop}}: Kontrol.convert_sugared_constraints_to_closures({type: {{constraints}}}),
         {% else %}
           # to invoke Kontrol.object
-          {{prop}}: (Kontrol.{{constraints}}).as(Hash(Symbol, Kontrol::Rule) | Kontrol::Validator),
+          {{prop}}: (Kontrol.{{constraints}})[0].as(Hash(Symbol, Kontrol::Rule) | Kontrol::Validator),
         {% end %}
       {% end %}
     }.to_h
