@@ -1,6 +1,6 @@
 # kontrol [![Build Status](https://travis-ci.org/Ragmaanir/kontrol.svg?branch=master)](https://travis-ci.org/Ragmaanir/kontrol)[![Dependency Status](https://shards.rocks/badge/github/ragmaanir/kontrol/status.svg)](https://shards.rocks/github/ragmaanir/kontrol)
 
-### Version: 0.2.1
+### Version: 0.2.2
 
 Kontrol is a DSL to define validations for JSON data.
 
@@ -24,7 +24,7 @@ require "kontrol"
 # To define a validation you can use the `Kontrol.object` macro.
 # Validations can be defined by expressions:
 
-k = Kontrol.object(
+k, _ = Kontrol.object(
   name: {type: String, length: v.size > 4},
 )
 
@@ -51,7 +51,7 @@ Kontrol.object(
 
 # You can also define root-level validations for an object:
 
-k = Kontrol.object(
+k, _ = Kontrol.object(
   {length: v["name"].as_s.size == v["name_length"].as_i},
   name: String,
   name_length: Int64
@@ -75,40 +75,48 @@ assert k.call(j) == {
 Simple example:
 
 ```crystal
-res = Kontrol.object(
+# First object is the validator, second is the converter that can be used
+# to convert the JSON to nested named tuples.
+val, con = Kontrol.object(
   name: String,
   percentage: {type: Int64, min: v > 0, max: v <= 100}
 )
 
 # invalid since percentage violates :min constraint
-assert res.call(json(
+assert val.call(json(
   name: "test",
   percentage: -1
 )) == {"percentage" => [:min]}
 
 # invalid since name violates :type-constraint and :min is violated
-assert res.call(json(
+assert val.call(json(
   name: 2,
   percentage: -1
 )) == {"name" => [:type], "percentage" => [:min]}
 
 # invalid since the required attributes are missing or nil
-assert res.call(json(
+assert val.call(json(
   name: nil
 )) == {"name" => [:required], "percentage" => [:required]}
 
 # valid
-assert res.call(json(
+assert val.call(json(
   name: "test",
   percentage: 45
 )).empty?
 
+# convert input to nested named tuples
+assert con.call(json(
+  name: "test",
+  percentage: 45
+)) == {name: "test", percentage: 45}
+
 ```
 
-Advanced example (nested objects and object-validations):
+Advanced example (nested objects and root-level-validations):
 
 ```crystal
-res = object(
+res, _ = object(
   {
     my_book: v["author"].as_s == v["book"]["author"].as_s,
   },
