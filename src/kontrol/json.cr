@@ -61,7 +61,7 @@ module Kontrol
       properties.each do |name, constraints|
         case c = constraints
         when Validator
-          if nested = json[name.to_s]?
+          if (nested = json[name.to_s]?) && !nested.raw.nil?
             validator_errors = c.call(nested)
             validator_errors.each do |nested_name, nested_err|
               errors["#{name}.#{nested_name}"] = nested_err
@@ -83,7 +83,7 @@ module Kontrol
     end
 
     private def validate_property_constraints(prop_name : Symbol, constraints : Hash(Symbol, Rule), value : JSON::Any?) : Array(Symbol)
-      if value
+      if value && !value.raw.nil?
         if t = constraints[:type]
           return [:type] unless t.call(value)
         end

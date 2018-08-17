@@ -1,6 +1,6 @@
 # kontrol [![Build Status](https://travis-ci.org/Ragmaanir/kontrol.svg?branch=master)](https://travis-ci.org/Ragmaanir/kontrol)[![Dependency Status](https://shards.rocks/badge/github/ragmaanir/kontrol/status.svg)](https://shards.rocks/github/ragmaanir/kontrol)
 
-### Version: 0.2.2
+### Version: 0.2.3
 
 Kontrol is a DSL to define validations for JSON data.
 

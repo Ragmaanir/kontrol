@@ -10,3 +10,5 @@ class Readme
 end
 
 File.write("README.md", Readme.new.to_s)
+
+puts "README.md generated"
